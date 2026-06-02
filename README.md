@@ -1,61 +1,6 @@
-# HiPerViT — Hybrid Multi-Scale Perception Vision Transformer
+# HiPerViT: A Hybrid Multi-Scale Encoder for Hierarchical Patch Representation on Imbalanced Low-Resolution Data
 
-HiPerViT is a hybrid CNN–Transformer architecture for binary classification of dermoscopy images under severe class imbalance. It combines a pretrained **EfficientNet-B0** backbone with a shared **Vision Transformer (ViT)** encoder that operates simultaneously over three resolution scales. A novel **SkewMod** module injects a dataset-aware imbalance signal into the early Transformer layers, amplifying minority-class gradient flow during training without oversampling or loss re-weighting.
-
----
-
-## Architecture
-
-```
-Input Image (B, C, H, W)
-        │
-        ▼
-┌─────────────────────────┐
-│  EfficientNet-B0        │  ← partial fine-tuning (last 3 blocks)
-│  features_only=True     │
-│  out_indices = [2,3,4]  │
-└────────┬────────────────┘
-         │  3 feature maps
-    ┌────┴─────┬──────────┐
-    ▼          ▼          ▼
- Scale-112  Scale-56   Scale-28
- Patchify   Patchify   Patchify
- + Project  + Project  + Project
-    │          │          │
-    └────┬─────┘          │
-         │  concat        │
-         ▼                │
-  ┌──────────────────────────────────┐
-  │   Shared Transformer Encoder     │
-  │   + SkewMod (early 1/3 layers)   │
-  └──────────────────────────────────┘
-         │    │    │    │
-       All  112   56   28   ← 4 independent CLS tokens
-         └────┴────┴────┘
-                │
-         Concat (4 × dim)
-                │
-        ┌───────┴───────┐
-        ▼               ▼
-   MLP Head Con    MLP Head 28
-   (primary)       (auxiliary)
-        └───────┬───────┘
-                ▼
-          Final Logits
-```
-
-**Four resolution streams** are encoded independently through the same Transformer weights:
-
-| Stream | Source feature map | Purpose |
-|---|---|---|
-| All-scales | 112 ‖ 56 ‖ 28 concatenated | Global multi-scale context |
-| Scale-112 | EfficientNet stage 2 | Fine local detail |
-| Scale-56 | EfficientNet stage 3 | Mid-level features |
-| Scale-28 | EfficientNet stage 4 | High-level semantics |
-
-The four CLS tokens are fused by the primary MLP head. The Scale-28 CLS token also feeds a dedicated auxiliary head (deep supervision). Final output is the **sum** of both heads.
-
----
+HiPerViT is a hybrid CNN–Transformer architecture for binary classification of dermoscopy images under severe class imbalance. It combines a pretrained **CNN** backbone with a shared **Vision Transformer (ViT)** encoder that operates simultaneously over three resolution scales. A novel **SkewMod** module injects a dataset-aware imbalance signal into the middle Transformer layers, amplifying minority-class gradient flow during training without oversampling or loss re-weighting.
 
 ## SkewMod — Imbalance-Aware Embedding Modulation
 
@@ -80,18 +25,14 @@ HiPerViT/
 ├── models/
 │   └── hipervit.py          # HiPerViT, Transformer, SkewMod, GradProbe
 │
-├── datasets/
+├── datasets/                # dataset loader modules
 │   ├── dataset_isic2017.py
 │   ├── dataset_isic2018.py
 │   ├── dataset_isic2024.py
 │   ├── dataset_cbd4905.py
 │   └── dataset_derm7pt.py
 │
-├── configs/
-│   └── architecture.yaml    # Model hyperparameters
-│
-├── weights/                 # Saved checkpoints (created at runtime)
-├── logs/                    # Training logs (created at runtime)
+├── config.yaml              # Model hyperparameters
 │
 ├── train.py                 # Training entry-point
 ├── predict.py               # Inference / evaluation entry-point
@@ -99,46 +40,6 @@ HiPerViT/
 ├── early_stopping.py        # AUC-monitored early stopping
 └── README.md
 ```
-
----
-
-## Requirements
-
-- Python ≥ 3.9
-- PyTorch ≥ 2.0
-- CUDA-capable GPU (recommended: ≥ 16 GB VRAM for batch size 32)
-
-Install dependencies:
-
-```bash
-pip install torch torchvision timm einops \
-            scikit-learn pandas numpy tqdm pyyaml \
-            warmup-scheduler h5py
-```
-
----
-
-## Configuration
-
-Model hyperparameters are defined in `configs/architecture.yaml`:
-
-```yaml
-model:
-  image-size: 224
-  patch-size: 4
-  dim: 256
-  depth: 6
-  heads: 8
-  dim-head: 32
-  mlp-dim: 512
-  emb-dim: 1024      # max positional embedding sequence length
-  dropout: 0.1
-  emb-dropout: 0.1
-```
-
-`emb-dim` must be ≥ the longest token sequence seen during training, which is `1 + N_112 + N_56 + N_28` (CLS token + all patches from the three scales concatenated).
-
----
 
 ## Datasets
 
@@ -193,108 +94,8 @@ outputs can be traced back to individual samples.
 Place each dataset under its own root directory and pass that path as
 `--data-dir`.  The layout expected by each module is shown below.
 
-#### ISIC 2017
-
 ```
-isic2017/
-├── train_set/
-│   └── *.jpg
-├── valid_set/
-│   └── *.jpg
-├── test_set/
-│   └── *.jpg
-├── train_set_labels.csv
-├── valid_set_labels.csv
-└── test_set_labels.csv
-```
-
-CSV columns required:
-
-| Column | Description |
-|---|---|
-| `image_id` | Filename without extension (e.g. `ISIC_0024306`) |
-| `melanoma` | Binary label — `1` = melanoma, `0` = non-melanoma |
-
-The dataset module constructs the full image path as:
-`<data_dir>/<split>_set/<image_id>.jpg`
-
----
-
-#### ISIC 2018
-
-```
-isic2018/
-├── train_set/
-│   └── *.jpg
-├── valid_set/
-│   └── *.jpg
-├── test_set/
-│   └── *.jpg
-├── train_set_labels.csv
-├── valid_set_labels.csv
-└── test_set_labels.csv
-```
-
-CSV columns required:
-
-| Column | Description |
-|---|---|
-| `image_id` | Filename without extension |
-| `target` | Binary label — `1` = melanoma, `0` = non-melanoma |
-
----
-
-#### ISIC 2024
-
-```
-isic2024/
-├── train-image.hdf5    # all images stored inside this file keyed by isic_id
-└── train-metadata.csv
-```
-
-CSV columns required:
-
-| Column | Description |
-|---|---|
-| `isic_id` | Image key inside the HDF5 file |
-| `target` | Binary label — `1` = melanoma, `0` = non-melanoma |
-
-Images are read directly from the HDF5 file at runtime.  The path to the
-HDF5 file is constructed as `<data_dir>/train-image.hdf5` and does not need
-to be passed separately.
-
----
-
-#### CBD4905 / IMBD9810
-
-```
-cbd4905/
-├── images/
-│   └── *.jpg
-├── train_set.csv
-├── valid_set.csv
-└── test_set.csv
-```
-
-CSV columns required:
-
-| Column | Description |
-|---|---|
-| `image_id` | Filename without extension |
-| `target` | Binary label — `1` = melanoma, `0` = non-melanoma |
-
-The dataset module constructs the full image path as:
-`<data_dir>/images/<image_id>.jpg`
-
-`IMBD9810` uses the same module and directory layout as `CBD4905`; the
-imbalanced split is produced by `get_df_imbalanced_9810(data_dir)`.
-
----
-
-#### Derm7pt
-
-```
-derm7pt/
+dataset/
 ├── images/
 │   └── *.jpg
 ├── train_set.csv
@@ -421,7 +222,7 @@ python train.py \
     --batch-size     32 \
     --n-epochs       30 \
     --init-lr        3e-5 \
-    --config         ./configs/architecture.yaml \
+    --config         ./config.yaml \
     --model-dir      ./weights \
     --log-dir        ./logs
 ```
@@ -498,61 +299,3 @@ python predict.py \
 - Full `sklearn` classification report
 
 Results are printed to the console and appended to `subs/pred_<kernel-type>.txt`.
-
----
-
-## GradProbe — Gradient Diagnostic Tool
-
-`GradProbe` is a backward-hook utility included in `models/hipervit.py` for verifying that SkewMod successfully amplifies minority-class gradient norms during training.
-
-```python
-from models.hipervit import GradProbe
-
-probe = GradProbe()
-model.transformer.skew_mod.register_full_backward_hook(probe.hook)
-
-for data, target in train_loader:
-    probe.set_labels(target)       # must be called before each forward pass
-    logits = model(data)
-    loss = criterion(logits, target)
-    loss.backward()
-
-# Inspect per-batch gradient norms split by class
-print(probe.logs[-1])              # {"g_min": float, "g_maj": float}
-```
-
-A healthy SkewMod should show `g_min > g_maj` (minority gradients amplified relative to majority).
-
----
-
-## Multi-GPU Training
-
-Multi-GPU training via `nn.DataParallel` is enabled automatically when more than one GPU is detected:
-
-```bash
-CUDA_VISIBLE_DEVICES=0,1,2,3 python train.py ...
-```
-
-When loading a DataParallel checkpoint with `predict.py` on a single GPU, the `module.` prefix is stripped automatically.
-
----
-
-## License
-
-This project is released under the [MIT License](LICENSE).
-
----
-
-## Citation
-
-If you use HiPerViT in your research, please cite:
-
-```bibtex
-@misc{hipervit2025,
-  title  = {HiPerViT: Hybrid Multi-Scale Perception Vision Transformer
-            with Skew Modulation for Imbalanced Skin Lesion Classification},
-  author = {Ahammed, S. and others},
-  year   = {2025},
-  url    = {https://github.com/<your-username>/hipervit}
-}
-```
