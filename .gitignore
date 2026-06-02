@@ -163,5 +163,4 @@ cython_debug/
 
 # input data, saved log, checkpoints
 checkpoints/
-models/
 outputs/
