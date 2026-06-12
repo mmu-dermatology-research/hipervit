@@ -152,7 +152,7 @@ Results are printed to the console and appended to `subs/pred_<kernel-type>.txt`
 
 @inproceedings{ahammed2026hipervit,
   title={HiPerViT: A Hybrid Multi-Scale Encoder for Hierarchical Patch Representation on Imbalanced Low-Resolution Data},
-  author={Ahammed, Sakib and Cui, Xia and Lu, Wenqi and Yap, Moi Hoon},
+  author={Ahammed, Sakib and Cui, Xia and Fan, Xinqi and Lu, Wenqi and Yap, Moi Hoon},
   booktitle={2026 IEEE International Conference on Image Processing (ICIP)},
   year={2026},
   organization={IEEE},
