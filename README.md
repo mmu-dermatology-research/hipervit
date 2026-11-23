@@ -2,6 +2,9 @@
 
 HiPerViT is a hybrid CNN–Transformer architecture for binary classification of dermoscopy images under severe class imbalance. It combines a pretrained **CNN** backbone with a shared **Vision Transformer (ViT)** encoder that performs over three resolution scales. A novel **SkewMod** module injects a dataset-aware imbalance signal into the middle Transformer layers, amplifying minority-class gradient flow during training without oversampling or loss re-weighting.
 
+**Paper:** [HiPerViT: A Hybrid Multi-Scale Encoder for Hierarchical Patch Representation on Imbalanced Low-Resolution Data](https://doi.org/10.1109/ICIP61757.2026.11630075) | **DOI:** [10.1109/ICIP61757.2026.11630075](https://doi.org/10.1109/ICIP61757.2026.11630075)
+
+
 ## SkewMod: Imbalance-Aware Embedding Modulation
 
 SkewMod addresses class imbalance directly inside the Transformer, rather than at the data or loss level.
@@ -15,12 +18,11 @@ At each of the first `floor(depth / 3)` Transformer layers, after the standard a
 
 `ρ` is computed from the **actual training-split class distribution** before model construction (see `train.py: calculate_imbalance_ratio_rho`).
 
----
 
 
 # Citation
 
-Please consider citing our paper.
+Please consider citing our **[paper](https://doi.org/10.1109/ICIP61757.2026.11630075)**.
 
 ```
 @inproceedings{ahammed2026hipervit,
