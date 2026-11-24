@@ -40,7 +40,7 @@ An extended version of this work, named **AdaptiveViT**, is available with metho
 
 # Datasets
 
-HiPerViT was evaluated on binary classification tasks including  melanoma detection and ulcerative colitis severity assessment.
+HiPerViT was evaluated on binary classification tasks for  melanoma detection.
 
 | Dataset | Tag | Task (Binary Classification) | Classes | Imbalance Ratio | Image Source | Dataset Download |
 |---|---|---|---|---|---|---|
@@ -50,7 +50,6 @@ HiPerViT was evaluated on binary classification tasks including  melanoma detect
 | **ISIC Balanced** | `CBD4905` | Melanoma vs. Non-Melanoma | 2 | 1:1 | Image folder | [ISIC Balanced](https://api.isic-archive.com/collections/470/) |
 | **ISIC Imbalanced** | `IMBD9810` | Melanoma vs. Non-Melanoma | 2 | ~1.7:1 | Image folder | [ISIC-DICM-17K](https://github.com/mmu-dermatology-research/isic-dicm-17k) |
 | **Derm7pt** | `Derm7pt`, `Derm7ptClinic` | Melanoma vs. Non-Melanoma | 2 | ~3.6:1 | Image folder | [Derm7pt](https://github.com/jeremykawahara/derm7pt) |
-| **HyperKvasir UC** | `IBDHKUC` | Severe vs. Non-Severe UC | 2 | ~5.4:1 | Image folder | [HyperKvasir](https://github.com/simula/hyper-kvasir) |
 
 
 ## Repository Layout
