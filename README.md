@@ -22,7 +22,7 @@ At each of the first `floor(depth / 3)` Transformer layers, after the standard a
 
 # Citation
 
-Please consider citing our **[paper](https://doi.org/10.1109/ICIP61757.2026.11630075)**.
+If you find this repository helpful, please consider citing:
 
 ```
 @inproceedings{ahammed2026hipervit,
